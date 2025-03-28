@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const axios = require("axios"); // Add this line
 dotenv.config();
 
 if (!process.env.STRIPE_KEY) {
@@ -19,8 +20,63 @@ app.get("/", (req, res) => {
   });
 });
 
+app.get("/api/search", async (req, res) => {
+  const query = req.query.query;
+
+  if (!query || query.trim() === "") {
+    return res.status(400).json({ error: "Search query is required" });
+  }
+
+  try {
+    // Fetch data from fakestoreapi
+    const response = await axios.get("https://fakestoreapi.com/products");
+    const products = response.data;
+
+    // Log the query and fetched products for debugging
+    console.log("Search query:", query);
+    console.log("Fetched products:", products);
+
+    // Mock category data for demonstration
+    const categories = [
+      { id: "electronics", name: "Electronics", type: "category" },
+      { id: "jewelery", name: "Jewelery", type: "category" },
+    ];
+
+    // Filter products based on the query (case-insensitive)
+    const productResults = products
+      .filter((item) => item.title.toLowerCase().includes(query.toLowerCase()))
+      .map((product) => ({
+        id: product.id,
+        name: product.title,
+        type: "product",
+      }));
+
+    // Filter categories based on the query (case-insensitive)
+    const categoryResults = categories.filter((category) =>
+      category.name.toLowerCase().includes(query.toLowerCase())
+    );
+
+    // Combine results
+    const results = [...categoryResults, ...productResults];
+
+    // Log the filtered results for debugging
+    console.log("Search results:", results);
+
+    // If no results are found, return an empty array with a 200 status
+    if (results.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    // Return results
+    res.status(200).json(results);
+  } catch (error) {
+    console.error("Error during search:", error);
+    res.status(500).json({ error: "An error occurred while searching" });
+  }
+});
+
 app.post("/payment/create", async (req, res) => {
-  const total = parseInt(req.query.total);
+  const total = parseInt(req.query.total, 10);
 
   // Check if the total amount is at least 50 cents
   if (total < 50) {
