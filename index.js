@@ -24,6 +24,7 @@ app.get("/api/search", async (req, res) => {
   const query = req.query.query;
 
   if (!query || query.trim() === "") {
+    console.log("Search query is missing or empty.");
     return res.status(400).json({ error: "Search query is required" });
   }
 
@@ -40,6 +41,8 @@ app.get("/api/search", async (req, res) => {
     const categories = [
       { id: "electronics", name: "Electronics", type: "category" },
       { id: "jewelery", name: "Jewelery", type: "category" },
+      { id: "mens-category", name: "Men's Category", type: "category" },
+      { id: "womens-category", name: "Women's Category", type: "category" },
     ];
 
     // Filter products based on the query (case-insensitive)
@@ -52,25 +55,32 @@ app.get("/api/search", async (req, res) => {
       }));
 
     // Filter categories based on the query (case-insensitive)
-    const categoryResults = categories.filter((category) =>
-      category.name.toLowerCase().includes(query.toLowerCase())
-    );
+    const categoryResults = categories
+      .filter((category) =>
+        category.name.toLowerCase().includes(query.toLowerCase())
+      )
+      .map((category) => ({
+        id: category.id,
+        name: category.name,
+        type: category.type, // Ensure type is included
+      }));
 
     // Combine results
     const results = [...categoryResults, ...productResults];
 
     // Log the filtered results for debugging
-    console.log("Search results:", results);
+    console.log("Filtered search results:", results);
 
     // If no results are found, return an empty array with a 200 status
     if (results.length === 0) {
+      console.log("No results found for the query.");
       return res.status(200).json([]);
     }
 
     // Return results
     res.status(200).json(results);
   } catch (error) {
-    console.error("Error during search:", error);
+    console.error("Error during search:", error.message);
     res.status(500).json({ error: "An error occurred while searching" });
   }
 });
